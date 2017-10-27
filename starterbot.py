@@ -34,7 +34,17 @@ def create_user():
 
 def calculate_msg_delay(user, ts):
     # TODO: Calculate the delay using user_dictionary[user]["last_post_ts"]
-    return 0
+
+    last_post_ts = user_dictionary[user]
+    latency = ts - last_post_ts
+    if latency < T_START:
+        return 0.3
+    elif latency < T_MAX:
+        return 1.2
+    else:
+        return 1
+
+
 
 def update_user_importance(user):
     # incriment number of posts
@@ -52,6 +62,9 @@ def update_msg_similarity(user, msg):
     S = 0
 
     user_dictionary[user]["S"].insert(0, S)
+
+    
+
 
     #this method will return the calculated importance I
     return S
