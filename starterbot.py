@@ -1,6 +1,7 @@
 import os
 import time
 from slackclient import SlackClient
+from fuzzywuzzy import fuzz
 
 # starterbot's ID as an environment variable
 BOT_ID = os.environ.get("BOT_ID")
@@ -12,6 +13,10 @@ AT_BOT = "<@" + BOT_ID + ">"
 T_START = 5
 T_MAX = 15
 T_END = 30
+
+# Similarity constants
+S1 = 0.3
+S2 = 0.95
 
 # Value constants
 VD_MAX = 1
@@ -29,21 +34,23 @@ post_list = []
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
+
 def create_user():
-    return {"I" : [1], "V" : [1], "S" : [1], "N" : 0, "last_post_ts" : 0}
+    return {"I": [1], "V": [1], "S": [1], "N": 0, "last_post_ts": 0}
+
 
 def calculate_msg_delay(user, ts):
     # TODO: Calculate the delay using user_dictionary[user]["last_post_ts"]
 
+
     last_post_ts = user_dictionary[user]
     latency = ts - last_post_ts
     if latency < T_START:
-        return 0.3
+        return latency
     elif latency < T_MAX:
         return 1.2
     else:
         return 1
-
 
 
 def update_user_importance(user):
@@ -52,22 +59,51 @@ def update_user_importance(user):
 
     # TODO: Calculate user importance
     I = 0
+    N = user_dictionary[user]["N"]
+
+    Vs = user_dictionary[user]["V"]
+    Vsum = 0
+    for i in Vs:
+        Vsum += i
+    Vmean = Vsum / N
+
+    Ss = user_dictionary[user]["S"]
+    Ssum = 0
+    for i in Ss:
+        Ssum += i
+    Smean = Ssum / i
+
+    c = 0
+    if Smean > S1 and Smean < S2:
+        c = ALPHA
+    elif Smean <= S1:
+        c = BETA
+    else:
+        c = GAMMA
+
+    I = N * Vmean * c
 
     user_dictionary[user]["I"].insert(0, I)
-    #this method will return the calculated importance I
+    # this method will return the calculated importance I
     return I
+
 
 def update_msg_similarity(user, msg):
     # TODO: Calculate message similarity over 'post_list'
-    S = 0
+    S = 1.2
+    similarity = 0
+    for post in post_list:
+        similarity = max(compare_similarity(msg, post), similarity)
+
+    if similarity < 10:
+        S = 1
+    elif similarity > 95:
+        S = 0.2
 
     user_dictionary[user]["S"].insert(0, S)
-
-    
-
-
-    #this method will return the calculated importance I
+    # this method will return the calculated importance I
     return S
+
 
 def calculate_user_value(user, msg, ts):
     # Calculate the value.
@@ -83,6 +119,7 @@ def calculate_user_value(user, msg, ts):
     # Return the calculated value.
     return V
 
+
 def handle_post_for_user(msg, channel, user, ts):
     """
         Receives commands directed at the bot and determines if they
@@ -91,7 +128,7 @@ def handle_post_for_user(msg, channel, user, ts):
     """
 
     # Create a user if it does not exists.
-    if user not in user_dictionary
+    if user not in user_dictionary:
         user_dictionary[user] = create_user()
 
     # Calculate the value for the user.
@@ -104,7 +141,7 @@ def handle_post_for_user(msg, channel, user, ts):
     user_dictionary[user]["last_post_ts"] = ts
 
     # Send response with calculated user value.
-    response = "The current value for ''" + user "''" + \
+    response = "The current value for ''" + user + "''" + \
                "is '" + user_dictionary[user]["V"][0] + "'"
 
     slack_client.api_call("chat.postMessage", channel=channel,
@@ -129,14 +166,18 @@ def parse_slack_output(slack_rtm_output):
     return None, None, None, None
 
 
+def compare_similarity(sentence1, sentence2):
+    return fuzz.ratio(sentence1, sentence2)
+
+
 if __name__ == "__main__":
-    READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
+    READ_WEBSOCKET_DELAY = 1  # 1 second delay between reading from firehose
     if slack_client.rtm_connect():
         print("CS598 Bot connected and running!")
         while True:
             msg, channel, user, ts = parse_slack_output(slack_client.rtm_read())
             if msg and channel and user and ts:
-                handle_command(msg, channel, user, ts)
+                handle_post_for_user(msg, channel, user, ts)
             time.sleep(READ_WEBSOCKET_DELAY)
     else:
         print("Connection failed. Invalid Slack token or bot ID?")
