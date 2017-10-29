@@ -8,6 +8,7 @@ BOT_ID = os.environ.get("BOT_ID")
 
 # constants
 AT_BOT = "<@" + BOT_ID + ">"
+AUTO_RESPONSE = "[AUTO RESPONSE] "
 
 # Time constants
 T_START = 5
@@ -40,10 +41,7 @@ def create_user():
 
 
 def calculate_msg_delay(user, ts):
-    # TODO: Calculate the delay using user_dictionary[user]["last_post_ts"]
-
-
-    last_post_ts = user_dictionary[user]
+    last_post_ts = user_dictionary[user]["last_post_ts"]
     latency = ts - last_post_ts
     if latency < T_START:
         return latency
@@ -84,12 +82,10 @@ def update_user_importance(user):
     I = N * Vmean * c
 
     user_dictionary[user]["I"].insert(0, I)
-    # this method will return the calculated importance I
     return I
 
 
 def update_msg_similarity(user, msg):
-    # TODO: Calculate message similarity over 'post_list'
     S = 1.2
     similarity = 0
     for post in post_list:
@@ -101,7 +97,6 @@ def update_msg_similarity(user, msg):
         S = 0.2
 
     user_dictionary[user]["S"].insert(0, S)
-    # this method will return the calculated importance I
     return S
 
 
@@ -131,18 +126,18 @@ def handle_post_for_user(msg, channel, user, ts):
     if user not in user_dictionary:
         user_dictionary[user] = create_user()
 
+    ts_long = long(float(ts));
     # Calculate the value for the user.
-    V = calculate_user_value(user, msg, ts)
+    V = calculate_user_value(user, msg, ts_long)
 
     # Store the current post.
     post_list.append(msg)
 
     # Update the latest post time foruser.
-    user_dictionary[user]["last_post_ts"] = ts
+    user_dictionary[user]["last_post_ts"] = ts_long;
 
     # Send response with calculated user value.
-    response = "The current value for ''" + user + "''" + \
-               "is '" + user_dictionary[user]["V"][0] + "'"
+    response = AUTO_RESPONSE + "Your value is '" + str(V) + "'"
 
     slack_client.api_call("chat.postMessage", channel=channel,
                           text=response, as_user=True)
@@ -159,7 +154,7 @@ def parse_slack_output(slack_rtm_output):
     output_list = slack_rtm_output
     if output_list and len(output_list) > 0:
         for output in output_list:
-            if output and 'text' in output:
+            if output and 'text' in output and AUTO_RESPONSE not in output['text']:
                 # return text after the @ mention, whitespace removed
                 return output['text'], \
                        output['channel'], output['user'], output['ts']
