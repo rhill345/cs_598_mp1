@@ -192,8 +192,41 @@ def update_community_reward(ts):
 
         participation_cycle_start_ts = ts_long
 
-def print_top_k_score():
-    print("Print the top k scores")
+def print_final_vals():
+    final_normalized_val = calculate_final_points(user_dictionary)
+    for user in final_normalized_val:
+        print "user " + user + " final reward point is " + final_normalized_val[user]
+
+
+
+def calculate_final_points(user_dictionary):
+    final_values = {}
+    for user in user_dictionary:
+        sum = 0
+        values = user_dictionary[user]["V"]
+        for v in values:
+            sum += v
+        final_values[user] = sum
+
+    min_value = float('inf')
+    max_value = float('-inf')
+    for value in final_values.values():
+        if value < min_value:
+            min_value = value
+        if value > max_value:
+            max_value = value
+
+    final_values_normalized = {}
+    for user in final_values:
+        value = final_values[user]
+        normalized_value = (value - min_value) / (max_value - min_value) * 5
+        final_values_normalized[user] = normalized_value
+
+    return final_values_normalized
+
+
+
+
 
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1  # 1 second delay between reading from firehose
@@ -204,7 +237,7 @@ if __name__ == "__main__":
             if msg and channel and user and ts:
                 update_community_reward(ts)
                 if msg.startswith(AT_BOT) and SCORE_COMMAND in msg :
-                    print_top_k_score()
+                    print_final_vals()
                 else:
                     handle_post_for_user(msg, channel, user, ts)
             time.sleep(READ_WEBSOCKET_DELAY)
