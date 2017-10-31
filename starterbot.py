@@ -8,6 +8,9 @@ BOT_ID = os.environ.get("BOT_ID")
 
 # constants
 AT_BOT = "<@" + BOT_ID + ">"
+
+SCORE_COMMAND = "printscore"
+
 AUTO_RESPONSE = "[AUTO RESPONSE] "
 
 # Time constants
@@ -35,6 +38,13 @@ post_list = []
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
+# participation cycle time
+COMMUNITY_REWARD = 1.2
+COMMUNITY_THRESHOLD = 10
+COMMUNITY_REWARD_TIME = 36
+
+participation_cycle_start_ts = 0
+participation_cycle_post_count = 0
 
 def create_user():
     return {"I": [1], "V": [1], "S": [1], "N": 0, "last_post_ts": 0}
@@ -121,7 +131,7 @@ def handle_post_for_user(msg, channel, user, ts):
         are valid commands. If so, then acts on the commands. If not,
         returns back what it needs for clarification.
     """
-
+    participation_cycle_post_count
     # Create a user if it does not exists.
     if user not in user_dictionary:
         user_dictionary[user] = create_user()
@@ -154,7 +164,7 @@ def parse_slack_output(slack_rtm_output):
     output_list = slack_rtm_output
     if output_list and len(output_list) > 0:
         for output in output_list:
-            if output and 'text' in output and AUTO_RESPONSE not in output['text']:
+            if output and 'text' in output and BOT_ID not in output['user']:
                 # return text after the @ mention, whitespace removed
                 return output['text'], \
                        output['channel'], output['user'], output['ts']
@@ -164,6 +174,26 @@ def parse_slack_output(slack_rtm_output):
 def compare_similarity(sentence1, sentence2):
     return fuzz.ratio(sentence1, sentence2)
 
+def update_community_reward(ts):
+    global participation_cycle_start_ts
+    ts_long = long(float(ts));
+    if participation_cycle_start_ts == 0:
+        participation_cycle_start_ts = ts_long
+
+    ts_hours  = (((ts_long - participation_cycle_start_ts) / (1000*60*60)) % 24);
+    if ts_hours >= COMMUNITY_REWARD_TIME:
+        n_agents = len(user_dictionary)
+        for key in user_dictionary:
+            n_post += len(user_dictionary[key]["V"])
+
+        if n_post > (COMMUNITY_THRESHOLD * n_agents):
+            for key in user_dictionary:
+                user_dictionary[key]["V"] = [i * COMMUNITY_REWARD for i in user_dictionary[key]["V"]]
+
+        participation_cycle_start_ts = ts_long
+
+def print_top_k_score():
+    print("Print the top k scores")
 
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1  # 1 second delay between reading from firehose
@@ -172,7 +202,11 @@ if __name__ == "__main__":
         while True:
             msg, channel, user, ts = parse_slack_output(slack_client.rtm_read())
             if msg and channel and user and ts:
-                handle_post_for_user(msg, channel, user, ts)
+                update_community_reward(ts)
+                if msg.startswith(AT_BOT) and SCORE_COMMAND in msg :
+                    print_top_k_score()
+                else:
+                    handle_post_for_user(msg, channel, user, ts)
             time.sleep(READ_WEBSOCKET_DELAY)
     else:
         print("Connection failed. Invalid Slack token or bot ID?")
