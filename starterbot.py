@@ -2,6 +2,7 @@ import os
 import time
 from slackclient import SlackClient
 from fuzzywuzzy import fuzz
+import operator
 
 # starterbot's ID as an environment variable
 BOT_ID = os.environ.get("BOT_ID")
@@ -192,11 +193,16 @@ def update_community_reward(ts):
 
         participation_cycle_start_ts = ts_long
 
-def print_final_vals():
+def print_final_vals(channel):
     final_normalized_val = calculate_final_points(user_dictionary)
-    for user in final_normalized_val:
-        print "user " + user + " final reward point is " + final_normalized_val[user]
+    sorted_point = sorted(final_normalized_val.items(), key=operator.itemgetter(1))
+    response = ""
+    for item in sorted_point:
+        print "user " + item[0] + " final reward point is " + str(item[1])
+        response += '<@' + item[0] + '>' + ' : ' + str(item[1]) + '\n'
 
+    slack_client.api_call("chat.postMessage", channel=channel,
+                          text=response, as_user=True)
 
 
 def calculate_final_points(user_dictionary):
@@ -217,15 +223,15 @@ def calculate_final_points(user_dictionary):
             max_value = value
 
     final_values_normalized = {}
+
+    # Add small value to diff to ensure a non-zero denominator
+    value_diff = (max_value - min_value) + 0.0000000001
     for user in final_values:
         value = final_values[user]
-        normalized_value = (value - min_value) / (max_value - min_value) * 5
+        normalized_value = (value - min_value) / (value_diff) * 5
         final_values_normalized[user] = normalized_value
 
     return final_values_normalized
-
-
-
 
 
 if __name__ == "__main__":
@@ -237,7 +243,7 @@ if __name__ == "__main__":
             if msg and channel and user and ts:
                 update_community_reward(ts)
                 if msg.startswith(AT_BOT) and SCORE_COMMAND in msg :
-                    print_final_vals()
+                    print_final_vals(channel)
                 else:
                     handle_post_for_user(msg, channel, user, ts)
             time.sleep(READ_WEBSOCKET_DELAY)
