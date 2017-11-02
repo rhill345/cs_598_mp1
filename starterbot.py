@@ -46,6 +46,7 @@ post_list = []
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
 # participation cycle time
+COMMUNITY_FRACTION = 0.3
 COMMUNITY_REWARD = 1.2
 COMMUNITY_THRESHOLD = 10
 COMMUNITY_REWARD_TIME = 36
@@ -97,14 +98,14 @@ def f_delay(d):
         return lam * math.exp(-d) + VD_INF
 
 
-def calculate_similarity_value(sim):                                                                                                                  
-   if sim <= TIS or sim >= TDE:                                                                                                                      
-       return 0                                                                                                                                      
-   elif TIS < sim and sim < TIE:                                                                                                                    
-       return 1.0 * (VMAX/(TIE-TIS)) * (sim - TIS)                                                                                                  
-   elif TDS < sim and sim < TDE:                                                                                                                    
-       return 1.0 * (VMAX/(TDS-TDE)) * (sim - TDE)                                                                                                  
-   else:                                                                                                                                            
+def calculate_similarity_value(sim):
+   if sim <= TIS or sim >= TDE:
+       return 0
+   elif TIS < sim and sim < TIE:
+       return 1.0 * (VMAX/(TIE-TIS)) * (sim - TIS)
+   elif TDS < sim and sim < TDE:
+       return 1.0 * (VMAX/(TDS-TDE)) * (sim - TDE)
+   else:
        return VS_MAX
 
 
@@ -149,7 +150,7 @@ def update_msg_similarity(user, msg):
     if len(post_list) == 0:
         S = 1
     else:
-        S = float(similarity)  / len(post_list)
+        S = float(similarity) / len(post_list)
 
     user_dictionary[user]["S"].insert(0, S)
     return S
@@ -162,7 +163,14 @@ def calculate_user_value(user, msg, ts):
     S = update_msg_similarity(user, msg)
     I = update_user_importance(user)
 
-    V = I * (S + D)
+    at = update_community_reward(ts)
+    au = get_active_users(ts)
+
+    cr = 1
+    if at >= COMMUNITY_THRESHOLD and au >= COMMUNITY_FRACTION * len(user_dictionary):
+       cr = COMMUNITY_REWARD
+
+    V = (I * (S + D)) * cr
 
     # Add value to the dictionary.
     user_dictionary[user]["V"].insert(0, V)
@@ -224,26 +232,24 @@ def compare_similarity(sentence1, sentence2):
     return get_cosine(vector1, vector2)
 
 
-#    return fuzz.partial_token_set_ratio(sentence1, sentence2) / float(100)
+def get_post_within_time_frame(ts):
+    ret = []
+    for post in post_list:
+        ts_hours = (((ts- post[2] ) / (1000 * 60 * 60)) % 24);
+        if ts_hours >= COMMUNITY_REWARD_TIME:
+            ret.append(post)
+    return ret
+
+def get_active_users(ts):
+    ret = []
+    for post in post_list:
+        ts_hours = (((ts- post[2] ) / (1000 * 60 * 60)) % 24);
+        if ts_hours >= COMMUNITY_REWARD_TIME:
+            ret.append(post[0])
+    return list(set(ret))
 
 def update_community_reward(ts):
-    global participation_cycle_start_ts
-    ts_long = long(float(ts));
-    if participation_cycle_start_ts == 0:
-        participation_cycle_start_ts = ts_long
-
-    ts_hours = (((ts_long - participation_cycle_start_ts) / (1000 * 60 * 60)) % 24);
-    if ts_hours >= COMMUNITY_REWARD_TIME:
-        n_agents = len(user_dictionary)
-        for key in user_dictionary:
-            n_post += len(user_dictionary[key]["V"])
-
-        if n_post > (COMMUNITY_THRESHOLD * n_agents):
-            for key in user_dictionary:
-                user_dictionary[key]["V"] = [i * COMMUNITY_REWARD for i in user_dictionary[key]["V"]]
-
-        participation_cycle_start_ts = ts_long
-
+    return get_post_within_time_frame(ts) / len(get_active_users(ts))
 
 def print_final_vals(channel):
     final_normalized_val = calculate_final_points(user_dictionary)
@@ -283,7 +289,6 @@ if __name__ == "__main__":
         while True:
             msg, channel, user, ts = parse_slack_output(slack_client.rtm_read())
             if msg and channel and user and ts:
-                update_community_reward(ts)
                 if msg.startswith(AT_BOT) and SCORE_COMMAND in msg:
                     print_final_vals(channel)
                 else:
