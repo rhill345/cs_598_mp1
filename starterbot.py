@@ -28,6 +28,7 @@ S2 = 0.80
 # Value constants
 VD_MAX = 1
 VD_INF = 0.9
+
 VS_MAX = 1
 
 # Author constants
@@ -35,9 +36,10 @@ ALPHA = 3
 BETA = 1.5
 GAMMA = 0.3
 
-VMAX = 5
-TIE = 0.2
-TDS = 0.9
+TIS = 0.1
+TIE = 0.4
+TDS = 0.85
+TDE = 0.95
 
 user_dictionary = {}
 post_list = []
@@ -99,9 +101,9 @@ def calculate_similarity_value(sim):
    if sim <= TIS or sim >= TDE:
        return 0
    elif TIS < sim and sim < TIE:
-       return 1.0 * (VMAX/(TIE-TIS)) * (sim - TIS)
+       return 1.0 * (VS_MAX/(TIE-TIS)) * (sim - TIS)
    elif TDS < sim and sim < TDE:
-       return 1.0 * (VMAX/(TDS-TDE)) * (sim - TDE)
+       return 1.0 * (VS_MAX/(TDS-TDE)) * (sim - TDE)
    else:
        return VS_MAX
 
@@ -127,9 +129,9 @@ def update_user_importance(user):
     Smean = float(Ssum) / i
 
     c = 0
-    if Smean > S1 and Smean < S2:
+    if Smean >= S1 and Smean < S2:
         c = ALPHA
-    elif Smean <= S1:
+    elif Smean < S1:
         c = BETA
     else:
         c = GAMMA
