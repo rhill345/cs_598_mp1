@@ -144,13 +144,12 @@ def update_user_importance(user):
 
 def update_msg_similarity(user, msg):
     similarity = 0
-    C = 0
     for post in post_list:
-        current_sim = calculate_similarity_value(compare_similarity(msg, post[1]))
+        similarity += calculate_similarity_value(compare_similarity(msg, post[1]))
     if len(post_list) == 0:
         S = 1
     else:
-        S = similarity / len(post_list)
+        S = float(similarity)  / len(post_list)
 
     user_dictionary[user]["S"].insert(0, S)
     return S
