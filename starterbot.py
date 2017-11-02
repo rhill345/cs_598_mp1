@@ -56,6 +56,9 @@ COMMUNITY_REWARD_TIME = 36
 WORD = re.compile(r'\w+')
 
 
+delay_value = -1
+
+
 def get_cosine(vec1, vec2):
     intersection = set(vec1.keys()) & set(vec2.keys())
     numerator = sum([vec1[x] * vec2[x] for x in intersection])
@@ -82,7 +85,9 @@ def create_user():
 def calculate_msg_delay(user, ts):
     last_post_ts = user_dictionary[user]["last_post_ts"]
     latency = ts - last_post_ts
-    return f_delay(latency)
+    delay_value = f_delay(latency)
+
+    return delay_value
 
 def f_delay(d):
     if d <= T_START:
@@ -201,7 +206,7 @@ def handle_post_for_user(msg, channel, user, ts):
 
     # Send response with calculated user value.
     response = AUTO_RESPONSE + "V: '" + str(V) + "'  I: " + str(user_dictionary[user]["I"]) + "'" + "'  S: " + str(
-        user_dictionary[user]["S"][0]) + "'"
+        user_dictionary[user]["S"][0]) + "'" + "DELAY VAL" + str(delay_value)
 
     slack_client.api_call("chat.postMessage", channel=channel,
                           text=response, as_user=True)
