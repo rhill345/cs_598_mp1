@@ -89,11 +89,11 @@ def f_delay(d):
         lam = 1.0 * VD_INF / (math.exp(T_START) - 1)
         return lam * (math.exp(d) - 1)
     elif d <= T_MAX:
-        b = 1.0 * (T_MAX / T_START * VD_INF - VS_MAX) / (T_MAX**2 - T_MAX * T_START)
+        b = 1.0 * (T_MAX / T_START * VD_INF - VD_MAX) / (T_MAX**2 - T_MAX * T_START)
         a = 1.0 * (VD_INF + b * (T_START**2)) / T_START
         return a*d - b*(d**2)
     else:
-        lam = 1.0 * (VS_MAX - VD_INF) * math.exp(T_MAX)
+        lam = 1.0 * (VD_MAX - VD_INF) * math.exp(T_MAX)
         return lam * math.exp(-d) + VD_INF
 
 
