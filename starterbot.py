@@ -90,7 +90,7 @@ def f_delay(d):
         return a*d - b*(d**2)
     else:
         lam = 1.0 * (VS_MAX - VD_INF) * math.exp(T_MAX)
-        return lam * math(-d) + VD_INF
+        return lam * math.exp(-d) + VD_INF
 
 
 def calculate_similarity_value(sim):
