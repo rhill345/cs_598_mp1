@@ -176,10 +176,11 @@ def calculate_user_value(user, msg, ts):
 
     V = (I_current * (S + D)) * cr
 
-    update_user_importance(user)
 
     # Add value to the dictionary.
     user_dictionary[user]["V"].insert(0, V)
+    update_user_importance(user)
+
 
     # Return the calculated value.
     return V
