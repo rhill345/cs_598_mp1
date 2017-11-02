@@ -174,7 +174,17 @@ def calculate_user_value(user, msg, ts):
     if at >= COMMUNITY_THRESHOLD and au >= COMMUNITY_FRACTION * len(user_dictionary):
        cr = COMMUNITY_REWARD
 
-    V = (I_current * (S + D)) * cr
+    if (S < S1):
+        V = 1.0 * I_current * (math.exp(S) - 1) / (math.exp(S1) - 1) * D
+    elif (S < S2):
+        b = 1.0 * I_current * (1.0 / S2 - 1.0 / S1) / (S1 - S2)
+        a = 1.0 * I_current / S1 + b * S1
+        V = (a * S - b * (S ** 2)) * D
+
+    else:
+        V = 1.0 * I_current * (math.exp(S2 - S) - 1) * D
+
+    V = V * cr
 
 
     # Add value to the dictionary.
