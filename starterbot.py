@@ -51,9 +51,6 @@ COMMUNITY_REWARD = 1.2
 COMMUNITY_THRESHOLD = 10
 COMMUNITY_REWARD_TIME = 36
 
-participation_cycle_start_ts = 0
-participation_cycle_post_count = 0
-
 WORD = re.compile(r'\w+')
 
 
@@ -185,7 +182,6 @@ def handle_post_for_user(msg, channel, user, ts):
         are valid commands. If so, then acts on the commands. If not,
         returns back what it needs for clarification.
     """
-    participation_cycle_post_count
     # Create a user if it does not exists.
     if user not in user_dictionary:
         user_dictionary[user] = create_user()
@@ -249,7 +245,9 @@ def get_active_users(ts):
     return list(set(ret))
 
 def update_community_reward(ts):
-    return get_post_within_time_frame(ts) / len(get_active_users(ts))
+    if len(get_active_users(ts)) == 0:
+        return 1
+    return len(get_post_within_time_frame(ts)) / len(get_active_users(ts))
 
 def print_final_vals(channel):
     final_normalized_val = calculate_final_points(user_dictionary)
