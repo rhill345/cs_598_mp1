@@ -12,7 +12,7 @@ BOT_ID = os.environ.get("BOT_ID")
 # constants
 AT_BOT = "<@" + BOT_ID + ">"
 
-SCORE_COMMAND = "printscore"
+SCORE_COMMAND = "PRINTSCORE"
 
 AUTO_RESPONSE = "[AUTO RESPONSE] "
 
@@ -22,8 +22,8 @@ T_MAX = 15
 T_END = 30
 
 # Similarity constants
-S1 = 0.3
-S2 = 0.80
+S1 = 0.25
+S2 = 0.9
 
 # Value constants
 VD_MAX = 1
@@ -32,14 +32,14 @@ VD_INF = 0.9
 VS_MAX = 1
 
 # Author constants
-ALPHA = 3
-BETA = 1.5
+ALPHA = 2
+BETA = 0.5
 GAMMA = 0.3
 
-TIS = 0.1
-TIE = 0.4
-TDS = 0.85
-TDE = 0.95
+TIS = 0.05
+TIE = 0.25
+TDS = 0.75
+TDE = 0.85
 
 user_dictionary = {}
 post_list = []
@@ -143,19 +143,9 @@ def update_user_importance(user):
 
 
 def update_msg_similarity(user, msg):
-    similarity_with_others = 0
+    similarity = 0
     for post in post_list:
-        if post[0] != user:
-            similarity_with_others += calculate_similarity_value(compare_similarity(msg, post[1]))
-
-    similarity_with_self = 0
-    for post in post_list:
-        if post[0] == user:
-            similarity_with_self += calculate_similarity_value(compare_similarity(msg, post[1]))
-
-    similarity = similarity_with_others
-    if similarity_with_self != 0:
-        similarity = float(similarity_with_others) / similarity_with_self
+        similarity += calculate_similarity_value(compare_similarity(msg, post[1]))
 
     if len(post_list) == 0:
         S = 1
@@ -230,7 +220,7 @@ def parse_slack_output(slack_rtm_output):
         for output in output_list:
             if output and 'text' in output and BOT_ID not in output['user']:
                 # return text after the @ mention, whitespace removed
-                return output['text'], \
+                return output['text'].upper(), \
                        output['channel'], output['user'], output['ts']
     return None, None, None, None
 
