@@ -98,13 +98,12 @@ def f_delay(d):
 
 
 def calculate_similarity_value(sim):
-    Vmax = 5
     if sim < TIE:
-        return
+        return (VMAX/TIE) * sim
     if sim >= TIE and sim <= TDS:
         return VS_MAX
     else:
-        return
+        return (1/Vmax) * sim
 
 
 def update_user_importance(user):
