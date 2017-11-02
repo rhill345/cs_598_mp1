@@ -120,13 +120,13 @@ def update_user_importance(user):
     Vsum = 0
     for i in Vs:
         Vsum += i
-    Vmean = Vsum / N
+    Vmean = float(Vsum) / N
 
     Ss = user_dictionary[user]["S"]
     Ssum = 0
     for i in Ss:
         Ssum += i
-    Smean = Ssum / i
+    Smean = float(Ssum) / i
 
     c = 0
     if Smean > S1 and Smean < S2:
