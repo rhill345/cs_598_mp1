@@ -3,7 +3,7 @@ import time
 import re, math
 from collections import Counter
 from slackclient import SlackClient
-#from fuzzywuzzy import fuzz
+# from fuzzywuzzy import fuzz
 import operator
 
 # starterbot's ID as an environment variable
@@ -36,7 +36,7 @@ BETA = 1.5
 GAMMA = 0.3
 
 user_dictionary = {}
-post_list =  []
+post_list = []
 
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
@@ -51,22 +51,25 @@ participation_cycle_post_count = 0
 
 WORD = re.compile(r'\w+')
 
+
 def get_cosine(vec1, vec2):
-     intersection = set(vec1.keys()) & set(vec2.keys())
-     numerator = sum([vec1[x] * vec2[x] for x in intersection])
+    intersection = set(vec1.keys()) & set(vec2.keys())
+    numerator = sum([vec1[x] * vec2[x] for x in intersection])
 
-     sum1 = sum([vec1[x]**2 for x in vec1.keys()])
-     sum2 = sum([vec2[x]**2 for x in vec2.keys()])
-     denominator = math.sqrt(sum1) * math.sqrt(sum2)
+    sum1 = sum([vec1[x] ** 2 for x in vec1.keys()])
+    sum2 = sum([vec2[x] ** 2 for x in vec2.keys()])
+    denominator = math.sqrt(sum1) * math.sqrt(sum2)
 
-     if not denominator:
+    if not denominator:
         return 0.0
-     else:
+    else:
         return float(numerator) / denominator
 
+
 def text_to_vector(text):
-     words = WORD.findall(text)
-     return Counter(words)
+    words = WORD.findall(text)
+    return Counter(words)
+
 
 def create_user():
     return {"I": 1, "V": [1], "S": [float(1)], "N": 0, "last_post_ts": 0}
@@ -82,14 +85,16 @@ def calculate_msg_delay(user, ts):
     else:
         return 1
 
+
 def calculate_similarity_value(sim):
     Vmax = 5
     if sim < TIE:
-        return 
+        return
     if sim >= TIE and sim <= TDS:
         return VS_MAX
     else:
-        return 
+        return
+
 
 def update_user_importance(user):
     # incriment number of posts
@@ -176,7 +181,8 @@ def handle_post_for_user(msg, channel, user, ts):
     user_dictionary[user]["last_post_ts"] = ts_long;
 
     # Send response with calculated user value.
-    response = AUTO_RESPONSE + "V: '" + str(V) + "'  I: " + str(user_dictionary[user]["I"]) + "'"+ "'  S: " + str(user_dictionary[user]["S"][0]) + "'"
+    response = AUTO_RESPONSE + "V: '" + str(V) + "'  I: " + str(user_dictionary[user]["I"]) + "'" + "'  S: " + str(
+        user_dictionary[user]["S"][0]) + "'"
 
     slack_client.api_call("chat.postMessage", channel=channel,
                           text=response, as_user=True)
@@ -204,6 +210,8 @@ def compare_similarity(sentence1, sentence2):
     vector1 = text_to_vector(sentence1)
     vector2 = text_to_vector(sentence2)
     return get_cosine(vector1, vector2)
+
+
 #    return fuzz.partial_token_set_ratio(sentence1, sentence2) / float(100)
 
 def update_community_reward(ts):
@@ -212,7 +220,7 @@ def update_community_reward(ts):
     if participation_cycle_start_ts == 0:
         participation_cycle_start_ts = ts_long
 
-    ts_hours  = (((ts_long - participation_cycle_start_ts) / (1000*60*60)) % 24);
+    ts_hours = (((ts_long - participation_cycle_start_ts) / (1000 * 60 * 60)) % 24);
     if ts_hours >= COMMUNITY_REWARD_TIME:
         n_agents = len(user_dictionary)
         for key in user_dictionary:
@@ -223,6 +231,7 @@ def update_community_reward(ts):
                 user_dictionary[key]["V"] = [i * COMMUNITY_REWARD for i in user_dictionary[key]["V"]]
 
         participation_cycle_start_ts = ts_long
+
 
 def print_final_vals(channel):
     final_normalized_val = calculate_final_points(user_dictionary)
@@ -237,15 +246,23 @@ def print_final_vals(channel):
 
 
 def calculate_final_points(user_dictionary):
-   final_values = {}
-   for user in user_dictionary:
-       sum = 0
-       values = user_dictionary[user]["V"]
-       for v in values:
-           sum += v
-       final_values[user] = sum
-   return final_values
+    final_values = {}
+    max_val = float("-inf")
+    for user in user_dictionary:
+        sum = 0
+        values = user_dictionary[user]["V"]
+        for v in values:
+            sum += v
+        final_values[user] = sum
+        if sum > max_val:
+            max_val = sum
 
+    final_normalized_values = {}
+    for user in final_values:
+        nor_val = final_values[user] / max_val * 5
+        final_normalized_values[user] = nor_val
+
+    return final_normalized_values
 
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1  # 1 second delay between reading from firehose
@@ -255,15 +272,10 @@ if __name__ == "__main__":
             msg, channel, user, ts = parse_slack_output(slack_client.rtm_read())
             if msg and channel and user and ts:
                 update_community_reward(ts)
-                if msg.startswith(AT_BOT) and SCORE_COMMAND in msg :
+                if msg.startswith(AT_BOT) and SCORE_COMMAND in msg:
                     print_final_vals(channel)
                 else:
                     handle_post_for_user(msg, channel, user, ts)
             time.sleep(READ_WEBSOCKET_DELAY)
     else:
         print("Connection failed. Invalid Slack token or bot ID?")
-
-
-
-
-        
