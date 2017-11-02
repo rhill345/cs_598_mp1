@@ -78,12 +78,19 @@ def create_user():
 def calculate_msg_delay(user, ts):
     last_post_ts = user_dictionary[user]["last_post_ts"]
     latency = ts - last_post_ts
-    if latency < T_START:
-        return latency
-    elif latency < T_MAX:
-        return 1.2
+    return f_delay(latency)
+
+def f_delay(d):
+    if d <= T_START:
+        lam = 1.0 * VD_INF / (math.exp(T_START) - 1)
+        return lam * (math.exp(d) - 1)
+    elif d <= T_MAX:
+        b = 1.0 * (T_MAX / T_START * VD_INF - VS_MAX) / (T_MAX**2 - T_MAX * T_START)
+        a = 1.0 * (VD_INF + b * (T_START**2)) / T_START
+        return a*d - b*(d**2)
     else:
-        return 1
+        lam = 1.0 * (VS_MAX - VD_INF) * math.exp(T_MAX)
+        return lam * math(-d) + VD_INF
 
 
 def calculate_similarity_value(sim):
