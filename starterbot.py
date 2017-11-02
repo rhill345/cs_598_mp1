@@ -56,7 +56,6 @@ COMMUNITY_REWARD_TIME = 36
 WORD = re.compile(r'\w+')
 
 
-delay_value = -1
 
 
 def get_cosine(vec1, vec2):
@@ -166,7 +165,7 @@ def calculate_user_value(user, msg, ts):
     # V = I (ds)
     D = calculate_msg_delay(user, ts)
     S = update_msg_similarity(user, msg)
-    I = update_user_importance(user)
+    I_current = user_dictionary[user]["I"]
 
     at = update_community_reward(ts)
     au = get_active_users(ts)
@@ -175,7 +174,9 @@ def calculate_user_value(user, msg, ts):
     if at >= COMMUNITY_THRESHOLD and au >= COMMUNITY_FRACTION * len(user_dictionary):
        cr = COMMUNITY_REWARD
 
-    V = (I * (S + D)) * cr
+    V = (I_current * (S + D)) * cr
+
+    update_user_importance(user)
 
     # Add value to the dictionary.
     user_dictionary[user]["V"].insert(0, V)
@@ -198,6 +199,9 @@ def handle_post_for_user(msg, channel, user, ts):
     # Calculate the value for the user.
     V = calculate_user_value(user, msg, ts_long)
 
+    delay_value = calculate_msg_delay(user, ts_long)
+
+
     # Store the current post.
     post_list.append((user, msg, ts_long))
 
@@ -206,7 +210,7 @@ def handle_post_for_user(msg, channel, user, ts):
 
     # Send response with calculated user value.
     response = AUTO_RESPONSE + "V: '" + str(V) + "'  I: " + str(user_dictionary[user]["I"]) + "'" + "'  S: " + str(
-        user_dictionary[user]["S"][0]) + "'" + "DELAY VAL" + str(delay_value)
+        user_dictionary[user]["S"][0]) + "'" + " DELAY VAL" + str(delay_value)
 
     slack_client.api_call("chat.postMessage", channel=channel,
                           text=response, as_user=True)
