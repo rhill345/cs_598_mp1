@@ -1,7 +1,9 @@
 import os
 import time
+import re, math
+from collections import Counter
 from slackclient import SlackClient
-from fuzzywuzzy import fuzz
+#from fuzzywuzzy import fuzz
 import operator
 
 # starterbot's ID as an environment variable
@@ -21,7 +23,7 @@ T_END = 30
 
 # Similarity constants
 S1 = 0.3
-S2 = 0.95
+S2 = 0.80
 
 # Value constants
 VD_MAX = 1
@@ -34,7 +36,7 @@ BETA = 1.5
 GAMMA = 0.3
 
 user_dictionary = {}
-post_list = []
+post_list =  []
 
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
@@ -47,8 +49,27 @@ COMMUNITY_REWARD_TIME = 36
 participation_cycle_start_ts = 0
 participation_cycle_post_count = 0
 
+WORD = re.compile(r'\w+')
+
+def get_cosine(vec1, vec2):
+     intersection = set(vec1.keys()) & set(vec2.keys())
+     numerator = sum([vec1[x] * vec2[x] for x in intersection])
+
+     sum1 = sum([vec1[x]**2 for x in vec1.keys()])
+     sum2 = sum([vec2[x]**2 for x in vec2.keys()])
+     denominator = math.sqrt(sum1) * math.sqrt(sum2)
+
+     if not denominator:
+        return 0.0
+     else:
+        return float(numerator) / denominator
+
+def text_to_vector(text):
+     words = WORD.findall(text)
+     return Counter(words)
+
 def create_user():
-    return {"I": [1], "V": [1], "S": [1], "N": 0, "last_post_ts": 0}
+    return {"I": 1, "V": [1], "S": [float(1)], "N": 0, "last_post_ts": 0}
 
 
 def calculate_msg_delay(user, ts):
@@ -61,6 +82,14 @@ def calculate_msg_delay(user, ts):
     else:
         return 1
 
+def calculate_similarity_value(sim):
+    Vmax = 5
+    if sim < TIE:
+        return 
+    if sim >= TIE and sim <= TDS:
+        return VS_MAX
+    else:
+        return 
 
 def update_user_importance(user):
     # incriment number of posts
@@ -92,20 +121,19 @@ def update_user_importance(user):
 
     I = N * Vmean * c
 
-    user_dictionary[user]["I"].insert(0, I)
+    user_dictionary[user]["I"] = I
     return I
 
 
 def update_msg_similarity(user, msg):
-    S = 1.2
     similarity = 0
+    C = 0
     for post in post_list:
-        similarity = max(compare_similarity(msg, post), similarity)
-
-    if similarity < 10:
+        current_sim = calculate_similarity_value(compare_similarity(msg, post[1]))
+    if len(post_list) == 0:
         S = 1
-    elif similarity > 95:
-        S = 0.2
+    else:
+        S = similarity / len(post_list)
 
     user_dictionary[user]["S"].insert(0, S)
     return S
@@ -142,13 +170,13 @@ def handle_post_for_user(msg, channel, user, ts):
     V = calculate_user_value(user, msg, ts_long)
 
     # Store the current post.
-    post_list.append(msg)
+    post_list.append((user, msg))
 
     # Update the latest post time foruser.
     user_dictionary[user]["last_post_ts"] = ts_long;
 
     # Send response with calculated user value.
-    response = AUTO_RESPONSE + "Your value is '" + str(V) + "'"
+    response = AUTO_RESPONSE + "V: '" + str(V) + "'  I: " + str(user_dictionary[user]["I"]) + "'"+ "'  S: " + str(user_dictionary[user]["S"][0]) + "'"
 
     slack_client.api_call("chat.postMessage", channel=channel,
                           text=response, as_user=True)
@@ -173,7 +201,10 @@ def parse_slack_output(slack_rtm_output):
 
 
 def compare_similarity(sentence1, sentence2):
-    return fuzz.ratio(sentence1, sentence2)
+    vector1 = text_to_vector(sentence1)
+    vector2 = text_to_vector(sentence2)
+    return get_cosine(vector1, vector2)
+#    return fuzz.partial_token_set_ratio(sentence1, sentence2) / float(100)
 
 def update_community_reward(ts):
     global participation_cycle_start_ts
@@ -206,32 +237,14 @@ def print_final_vals(channel):
 
 
 def calculate_final_points(user_dictionary):
-    final_values = {}
-    for user in user_dictionary:
-        sum = 0
-        values = user_dictionary[user]["V"]
-        for v in values:
-            sum += v
-        final_values[user] = sum
-
-    min_value = float('inf')
-    max_value = float('-inf')
-    for value in final_values.values():
-        if value < min_value:
-            min_value = value
-        if value > max_value:
-            max_value = value
-
-    final_values_normalized = {}
-
-    # Add small value to diff to ensure a non-zero denominator
-    value_diff = (max_value - min_value) + 0.0000000001
-    for user in final_values:
-        value = final_values[user]
-        normalized_value = (value - min_value) / (value_diff) * 5
-        final_values_normalized[user] = normalized_value
-
-    return final_values_normalized
+   final_values = {}
+   for user in user_dictionary:
+       sum = 0
+       values = user_dictionary[user]["V"]
+       for v in values:
+           sum += v
+       final_values[user] = sum
+   return final_values
 
 
 if __name__ == "__main__":
@@ -249,3 +262,8 @@ if __name__ == "__main__":
             time.sleep(READ_WEBSOCKET_DELAY)
     else:
         print("Connection failed. Invalid Slack token or bot ID?")
+
+
+
+
+        
