@@ -160,8 +160,9 @@ def calculate_user_value(user, msg, ts):
     # Calculate the value.
     # V = I (ds)
     D = calculate_msg_delay(user, ts)
-    I = update_user_importance(user)
     S = update_msg_similarity(user, msg)
+    I = update_user_importance(user)
+
     V = I * (S + D)
 
     # Add value to the dictionary.
