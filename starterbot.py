@@ -97,13 +97,15 @@ def f_delay(d):
         return lam * math.exp(-d) + VD_INF
 
 
-def calculate_similarity_value(sim):
-    if sim < TIE:
-        return (VMAX/TIE) * sim
-    if sim >= TIE and sim <= TDS:
-        return VS_MAX
-    else:
-        return (1/Vmax) * sim
+def calculate_similarity_value(sim):                                                                                                                  
+   if sim <= TIS or sim >= TDE:                                                                                                                      
+       return 0                                                                                                                                      
+   elif TIS < sim and sim < TIE:                                                                                                                    
+       return 1.0 * (VMAX/(TIE-TIS)) * (sim - TIS)                                                                                                  
+   elif TDS < sim and sim < TDE:                                                                                                                    
+       return 1.0 * (VMAX/(TDS-TDE)) * (sim - TDE)                                                                                                  
+   else:                                                                                                                                            
+       return VS_MAX
 
 
 def update_user_importance(user):
