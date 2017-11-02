@@ -146,7 +146,7 @@ def update_msg_similarity(user, msg):
     similarity_with_others = 0
     for post in post_list:
         if post[0] != user:
-        similarity_with_others += calculate_similarity_value(compare_similarity(msg, post[1]))
+            similarity_with_others += calculate_similarity_value(compare_similarity(msg, post[1]))
 
     similarity_with_self = 0
     for post in post_list:
