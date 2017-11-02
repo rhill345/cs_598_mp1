@@ -145,6 +145,7 @@ def update_user_importance(user):
 def update_msg_similarity(user, msg):
     similarity_with_others = 0
     for post in post_list:
+        if post[0] != user:
         similarity_with_others += calculate_similarity_value(compare_similarity(msg, post[1]))
 
     similarity_with_self = 0
@@ -155,7 +156,7 @@ def update_msg_similarity(user, msg):
     similarity = similarity_with_others
     if similarity_with_self != 0:
         similarity = float(similarity_with_others) / similarity_with_self
-        
+
     if len(post_list) == 0:
         S = 1
     else:
