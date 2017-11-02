@@ -35,6 +35,10 @@ ALPHA = 3
 BETA = 1.5
 GAMMA = 0.3
 
+VMAX = 5
+TIE = 0.2
+TDS = 0.9
+
 user_dictionary = {}
 post_list = []
 
