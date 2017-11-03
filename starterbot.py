@@ -149,9 +149,18 @@ def update_user_importance(user):
 
 
 def update_msg_similarity(user, msg):
-    similarity = 0
+    similarity_with_others = 0
     for post in post_list:
-        similarity += calculate_similarity_value(compare_similarity(msg, post[1]))
+        similarity_with_others += calculate_similarity_value(compare_similarity(msg, post[1]))
+
+    similarity_with_self = 0
+    for post in post_list:
+        if post[0] == user:
+            similarity_with_self += calculate_similarity_value(compare_similarity(msg, post[1]))
+
+    similarity = similarity_with_others
+    if similarity_with_self != 0:
+        similarity = float(similarity_with_others) / similarity_with_self
 
     if len(post_list) == 0:
         S = 1
@@ -187,8 +196,8 @@ def calculate_user_value(user, msg, ts):
         #V = 1.0 * I_current * (math.exp(S2 - S) - 1) * D
 
     #V = V * cr
-
-    V= (I_current*(S+D))*cr
+    s_crit = 0.5
+    V = ((I_current*(S*D))*cr)/ s_crit
 
 
     # Add value to the dictionary.
