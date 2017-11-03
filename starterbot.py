@@ -123,10 +123,15 @@ def update_user_importance(user):
     N = user_dictionary[user]["N"]
 
     Vs = user_dictionary[user]["V"]
+
     Vsum = 0
     for i in Vs:
         Vsum += i
+        print 'i ' + str(i)
+
     Vmean = float(Vsum) / N
+    print 'Vmean ' + str(Vmean)
+
 
     Ss = user_dictionary[user]["S"]
     Ssum = 0
@@ -143,9 +148,6 @@ def update_user_importance(user):
         c = GAMMA
 
     I = N * Vmean * c
-
-    print 'V ' + str(Vmean)
-    print 'I ' + str(I)
 
     user_dictionary[user]["I"] = I
     return I
