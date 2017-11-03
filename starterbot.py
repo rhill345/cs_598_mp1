@@ -19,22 +19,22 @@ AUTO_RESPONSE = "[AUTO RESPONSE] "
 # Time constants
 T_START = 5
 T_MAX = 15
-T_END = 30
+#T_END = 30
 
 # Similarity constants
 S1 = 0.25
 S2 = 0.9
 
 # Value constants
-VD_MAX = 1
-VD_INF = 0.9
+VD_MAX = 1.2
+VD_INF = 1
 
 VS_MAX = 1
 
 # Author constants
 ALPHA = 2
-BETA = 0.5
-GAMMA = 0.3
+BETA = 0.7
+GAMMA = 0.35
 
 TIS = 0.05
 TIE = 0.25
@@ -84,7 +84,9 @@ def create_user():
 def calculate_msg_delay(user, ts):
     last_post_ts = user_dictionary[user]["last_post_ts"]
     latency = ts - last_post_ts
-    delay_value = f_delay(latency)
+
+    latency_sec = latency * 0.001
+    delay_value = f_delay(latency_sec)
 
     return delay_value
 
@@ -174,17 +176,19 @@ def calculate_user_value(user, msg, ts):
     if at >= COMMUNITY_THRESHOLD and au >= COMMUNITY_FRACTION * len(user_dictionary):
        cr = COMMUNITY_REWARD
 
-    if (S < S1):
-        V = 1.0 * I_current * (math.exp(S) - 1) / (math.exp(S1) - 1) * D
-    elif (S < S2):
-        b = 1.0 * I_current * (1.0 / S2 - 1.0 / S1) / (S1 - S2)
-        a = 1.0 * I_current / S1 + b * S1
-        V = (a * S - b * (S ** 2)) * D
+    #if (S < S1):
+    #    V = 1.0 * I_current * (math.exp(S) - 1) / (math.exp(S1) - 1) * D
+    #elif (S < S2):
+    #    b = 1.0 * I_current * (1.0 / S2 - 1.0 / S1) / (S1 - S2)
+    #    a = 1.0 * I_current / S1 + b * S1
+    #    V = (a * S - b * (S ** 2)) * D
 
-    else:
-        V = 1.0 * I_current * (math.exp(S2 - S) - 1) * D
+    #else:
+        #V = 1.0 * I_current * (math.exp(S2 - S) - 1) * D
 
-    V = V * cr
+    #V = V * cr
+
+    V= (I_current*(S+D))*cr
 
 
     # Add value to the dictionary.
