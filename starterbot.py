@@ -3,7 +3,6 @@ import time
 import re, math
 from collections import Counter
 from slackclient import SlackClient
-# from fuzzywuzzy import fuzz
 import operator
 
 # starterbot's ID as an environment variable
@@ -19,7 +18,6 @@ AUTO_RESPONSE = "[AUTO RESPONSE] "
 # Time constants
 T_START = 0.8
 T_MAX = 6
-#T_END = 30
 
 # Similarity constants
 S1 = 0.25
@@ -28,7 +26,6 @@ S2 = 0.9
 # Value constants
 VD_MAX = 1.2
 VD_INF = 1
-
 VS_MAX = 1
 
 # Author constants
@@ -56,8 +53,6 @@ COMMUNITY_REWARD_TIME = 36
 WORD = re.compile(r'\w+')
 
 
-
-
 def get_cosine(vec1, vec2):
     intersection = set(vec1.keys()) & set(vec2.keys())
     numerator = sum([vec1[x] * vec2[x] for x in intersection])
@@ -78,7 +73,7 @@ def text_to_vector(text):
 
 
 def create_user():
-    return {"I": 1, "V": [1], "S": [float(1)], "N": 0, "last_post_ts": 0}
+    return {"I": 1, "V": [], "S": [], "N": 0, "last_post_ts": 0}
 
 
 def calculate_msg_delay(user, ts):
@@ -127,11 +122,8 @@ def update_user_importance(user):
     Vsum = 0
     for i in Vs:
         Vsum += i
-        print 'i ' + str(i)
 
     Vmean = float(Vsum) / N
-    print 'Vmean ' + str(Vmean)
-
 
     Ss = user_dictionary[user]["S"]
     Ssum = 0
@@ -147,7 +139,7 @@ def update_user_importance(user):
     else:
         c = GAMMA
 
-    I = N * Vmean * c
+    I = Vmean * c
 
     user_dictionary[user]["I"] = I
     return I
@@ -181,25 +173,12 @@ def calculate_user_value(user, msg, ts):
     if at >= COMMUNITY_THRESHOLD and au >= COMMUNITY_FRACTION * len(user_dictionary):
        cr = COMMUNITY_REWARD
 
-    #if (S < S1):
-    #    V = 1.0 * I_current * (math.exp(S) - 1) / (math.exp(S1) - 1) * D
-    #elif (S < S2):
-    #    b = 1.0 * I_current * (1.0 / S2 - 1.0 / S1) / (S1 - S2)
-    #    a = 1.0 * I_current / S1 + b * S1
-    #    V = (a * S - b * (S ** 2)) * D
-
-    #else:
-        #V = 1.0 * I_current * (math.exp(S2 - S) - 1) * D
-
-    #V = V * cr
     s_crit = 0.5
     V = ((I_current*(S*D))*cr)/ s_crit
-
 
     # Add value to the dictionary.
     user_dictionary[user]["V"].insert(0, V)
     update_user_importance(user)
-
 
     # Return the calculated value.
     return V
