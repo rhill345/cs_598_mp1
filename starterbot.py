@@ -144,6 +144,9 @@ def update_user_importance(user):
 
     I = N * Vmean * c
 
+    print 'V ' + str(Vmean)
+    print 'I ' + str(I)
+
     user_dictionary[user]["I"] = I
     return I
 
