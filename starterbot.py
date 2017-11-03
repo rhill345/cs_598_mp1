@@ -17,8 +17,8 @@ SCORE_COMMAND = "PRINTSCORE"
 AUTO_RESPONSE = "[AUTO RESPONSE] "
 
 # Time constants
-T_START = 5
-T_MAX = 15
+T_START = 0.8
+T_MAX = 6
 #T_END = 30
 
 # Similarity constants
@@ -85,7 +85,7 @@ def calculate_msg_delay(user, ts):
     last_post_ts = user_dictionary[user]["last_post_ts"]
     latency = ts - last_post_ts
 
-    latency_sec = latency * 0.001
+    latency_sec = latency
     delay_value = f_delay(latency_sec)
 
     return delay_value
@@ -149,18 +149,9 @@ def update_user_importance(user):
 
 
 def update_msg_similarity(user, msg):
-    similarity_with_others = 0
+    similarity = 0
     for post in post_list:
-        similarity_with_others += calculate_similarity_value(compare_similarity(msg, post[1]))
-
-    similarity_with_self = 0
-    for post in post_list:
-        if post[0] == user:
-            similarity_with_self += calculate_similarity_value(compare_similarity(msg, post[1]))
-
-    similarity = similarity_with_others
-    if similarity_with_self != 0:
-        similarity = float(similarity_with_others) / similarity_with_self
+        similarity += calculate_similarity_value(compare_similarity(msg, post[1]))
 
     if len(post_list) == 0:
         S = 1
