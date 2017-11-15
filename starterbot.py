@@ -129,7 +129,11 @@ def update_user_importance(user):
     Ssum = 0
     for i in Ss:
         Ssum += i
-    Smean = float(Ssum) / i
+    Smean = 0
+    if len(Ss) == 0:
+        Smean = float(Ssum)
+    else:
+        Smean = float(Ssum) / len(Ss)
 
     c = 0
     if Smean >= S1 and Smean < S2:
